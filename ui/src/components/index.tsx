@@ -93,7 +93,7 @@ const DockIQ: React.FC = () => {
           mb: 4,
         }}
       >
-        DockIQ
+        DockIQ - LIVE RELOAD TEST
       </Typography>
 
       {/* Status Cards */}

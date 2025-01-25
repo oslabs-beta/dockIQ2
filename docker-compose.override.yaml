@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: backend_dev # Use the development stage
+    ports:
+      - '3003:3000'
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./backend:/app/backend # Mount the local backend directory
+      - /app/backend/node_modules # Prevent overwriting node_modules
+    command: npm run dev # Start backend with nodemon
+
+  frontend:
+    build:
+      context: ./ # Build context is the root directory
+      dockerfile: ui/Dockerfile # Dockerfile for frontend is inside ./ui
+      target: ui-dev
+    working_dir: /app/ui # Set the working directory to /app/ui
+    ports:
+      - '3001:3000'
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:3003 # Backend API URL for frontend
+    volumes:
+      - ./ui:/app/ui:delegated # Mount the local frontend source code
+      - /app/ui/node_modules # Prevent overwriting node_modules
+    command: npm run dev # Use Vite for live reload
+
+  prometheus:
+    build:
+      context: ./prometheus
+      dockerfile: Dockerfile # Dockerfile is inside the prometheus directory
+    ports:
+      - '9094:9090' # Map Prometheus's internal port 9090 to host's port 9094

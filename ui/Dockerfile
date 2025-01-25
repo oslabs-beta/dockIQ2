@@ -1,59 +1,61 @@
+# ----------------------------------------
+# 1) Builder Stage (Build TypeScript)
+# ----------------------------------------
+    FROM --platform=$BUILDPLATFORM node:18.9-alpine3.15 AS ui-builder
 
-FROM --platform=$BUILDPLATFORM node:18.9-alpine3.15 AS ui-builder
-
-# Set working directory in the builder
-WORKDIR /app/ui
-
-# Copy only package files first (for better caching)
-COPY package.json /app/ui/package.json
-COPY package-lock.json /app/ui/package-lock.json
-
-# Cache npm folder to speed up builds
-RUN --mount=type=cache,target=/usr/src/app/.npm \
-    npm set cache /usr/src/app/.npm && \
-    npm ci
-
-# Now copy the rest of your UI code
-COPY . /app/ui
-
-# Build the UI
-# (Assuming "npm run build" outputs the production build in /app/ui/build)
-RUN npm run build
-
-# (Optional) Check that /app/ui/build exists
-RUN ls -al /app/ui/build
-
-##
-# 2) Final Stage
-##
-FROM alpine:3.15
-
-# If your final UI environment needs Node (for a Node-based server or serve library), install it.
-# If it's purely static, you might skip installing Node.
-RUN apk add --no-cache nodejs npm
-
-# Metadata for Docker Desktop extension, or just normal image labels
-LABEL org.opencontainers.image.title="DockIQ UI" \
-      org.opencontainers.image.description="Frontend for the DockIQ Docker Desktop extension." \
-      org.opencontainers.image.vendor="TheChefs" \
-      org.opencontainers.image.licenses="Apache-2.0" \
-      com.docker.desktop.extension.api.version=">= 0.3.0" \
-      com.docker.desktop.extension.icon="" \
-      com.docker.extension.screenshots='[{"alt":"DockIQ UI", "url":"https://example.com/screenshot.png"}]' \
-      com.docker.extension.detailed-description="<h1>DockIQ UI</h1><p>Frontend for monitoring Docker container health and metrics.</p>" \
-      com.docker.extension.publisher-url="https://thechefs.com" \
-      com.docker.extension.additional-urls='[{"title":"DockIQ Docs","url":"https://docs.thechefs.com"}]' \
-      com.docker.extension.changelog="<ul><li>Initial UI implementation for DockIQ.</li></ul>"
-
-# Copy the built UI from the builder stage into /app/ui/build in the final image
-COPY --from=ui-builder /app/ui/build /app/ui/build
-
-# If you want to serve it, you could install serve globally:
-RUN npm install -g serve
-
-# Expose port if you plan to serve it directly
-EXPOSE 3000
-
-# Launch a basic server to serve the static files
-CMD ["serve", "/app/ui/build"]
-
+    WORKDIR /app/ui
+    
+    # Copy only package.json and package-lock.json to leverage cache
+    COPY ./ui/package.json ./ui/package-lock.json ./
+    
+    # Install dependencies (npm ci will install only the production dependencies)
+    RUN npm ci
+    
+    # Copy the rest of the source code
+    COPY ./ui ./
+    
+    # Build the production app (Vite build)
+    RUN npm run build
+    
+    # ----------------------------------------
+    # 2) Development Stage (Live Reloading)
+    # ----------------------------------------
+    FROM node:18.9-alpine3.15 AS ui-dev
+    
+    WORKDIR /app/ui
+    
+    # Copy only package.json and package-lock.json
+    COPY ./ui/package.json ./ui/package-lock.json ./
+    
+    # Install dependencies (including dev dependencies like Vite)
+    RUN npm ci
+    
+    # Copy the source code
+    COPY ./ui ./
+    
+    # Debugging: Verify node_modules and Vite installation
+    RUN ls -al /app/ui/node_modules/.bin
+    
+    # Start the Vite development server
+    CMD ["npm", "run", "dev"]
+    
+    # ----------------------------------------
+    # 3) Production Stage
+    # ----------------------------------------
+    FROM alpine:3.15 AS ui-prod
+    
+    # Install Node.js and npm for running the production build
+    RUN apk add --no-cache nodejs npm
+    
+    # Copy the production build from the ui-builder stage
+    COPY --from=ui-builder /app/ui/build /app/ui/build
+    
+    # Install `serve` for serving static files
+    RUN npm install -g serve
+    
+    # Expose the port for the production server
+    EXPOSE 3000
+    
+    # Start the production server
+    CMD ["serve", "-s", "/app/ui/build"]
+    
