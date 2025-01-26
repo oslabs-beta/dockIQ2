@@ -36,7 +36,7 @@ FROM prom/prometheus:latest AS prometheus
 FROM alpine:3.15 AS final
 
 # Copy built frontend files
-COPY --from=frontend /app/ui/build /ui
+COPY --from=frontend /app/ui/build /app/ui
 
 # Copy built backend files
 COPY --from=backend /app/backend/dist /app/backend

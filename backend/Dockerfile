@@ -5,18 +5,16 @@
 
   WORKDIR /app/backend
   
-  # Step 1: Copy package files (only these first to improve build cache efficiency)
+  # Copy package files first to leverage Docker's cache
   COPY package.json package-lock.json ./
   
-  # Step 2: Install all dependencies including dev dependencies
-  RUN --mount=type=cache,target=/usr/src/app/.npm \
-      npm set cache /usr/src/app/.npm && \
-      npm ci --include=dev
+  # Install dependencies including dev dependencies
+  RUN npm ci --include=dev
   
-  # Step 3: Copy the rest of the backend source code
+  # Copy the rest of the backend source code
   COPY . .
   
-  # Step 4: Run the build script (TypeScript to JavaScript)
+  # Build the production backend
   RUN npm run build
   
   # ----------------------------------------
@@ -26,40 +24,39 @@
   
   WORKDIR /app/backend
   
-  # Copy package files for development environment
+  # Copy package files
   COPY package.json package-lock.json ./
   
-  # Install dependencies (including dev dependencies for `nodemon`)
+  # Install dependencies for development
   RUN npm ci --include=dev
   
-  # Copy the source code for live reloading (no need to copy ui)
+  # Copy the source code
   COPY . .
   
-  # Install `nodemon` globally for live reloading
+  # Install nodemon globally for live reloading
   RUN npm install -g nodemon
   
+  # Expose backend dev server port
   EXPOSE 3000
   
-  # Run the backend in development mode with live reloading
+  # Start the backend in development mode
   CMD ["nodemon", "--watch", "src", "--exec", "node", "src/app.js"]
   
   # ----------------------------------------
   # 3) Production Stage
   # ----------------------------------------
-  FROM alpine:3.15 AS backend_prod
-  
-  # Install Node.js and npm
-  RUN apk add --no-cache nodejs npm
+  FROM node:18-alpine AS backend_prod
   
   WORKDIR /app/backend
   
-  # Copy built files, dependencies, and package.json from the builder stage
+  # Copy built files, node_modules, and package.json from the builder stage
   COPY --from=backend_builder /app/backend/dist /app/backend/dist
   COPY --from=backend_builder /app/backend/node_modules /app/backend/node_modules
   COPY --from=backend_builder /app/backend/package.json /app/backend/package.json
   
+  # Expose backend production server port
   EXPOSE 3000
   
   # Start the backend in production mode
-  CMD ["npm", "--prefix", "/app/backend", "start"]
+  CMD ["node", "/app/backend/dist/app.js"]
   

@@ -38,11 +38,12 @@ const DockIQ: React.FC = () => {
     restarting: 0,
   });
   const [tabValue, setTabValue] = useState<number>(0);
+  const [headerText, setHeaderText] = useState('DockIQ - LIVE RELOAD Tfda'); // Dynamic header text
 
   // Fetch data from the backend
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:3003/api/container-stats');
+      const response = await fetch('http://localhost:3015/api/container-stats');
       const data = await response.json();
 
       // Parse the backend response
@@ -66,6 +67,17 @@ const DockIQ: React.FC = () => {
       console.error('Error fetching container data:', error);
     }
   };
+
+  // Effect to update the header text every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeaderText(
+        `DockIQ - LIVE RELOAD TEST - ${new Date().toLocaleTimeString()}`
+      ); // Change the header text every second
+    }, 1000);
+
+    return () => clearInterval(timer); // Clean up the timer on component unmount
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -93,7 +105,7 @@ const DockIQ: React.FC = () => {
           mb: 4,
         }}
       >
-        DockIQ - LIVE RELOAD TEST
+        {headerText} {/* Dynamic header text */}
       </Typography>
 
       {/* Status Cards */}
@@ -106,6 +118,7 @@ const DockIQ: React.FC = () => {
           justifyContent: 'space-between',
         }}
       >
+        {/* Running Status Card */}
         <Paper
           sx={{
             p: 3,
@@ -136,6 +149,7 @@ const DockIQ: React.FC = () => {
           </Box>
         </Paper>
 
+        {/* Stopped Status Card */}
         <Paper
           sx={{
             p: 3,
@@ -166,6 +180,7 @@ const DockIQ: React.FC = () => {
           </Box>
         </Paper>
 
+        {/* Unhealthy Status Card */}
         <Paper
           sx={{
             p: 3,
@@ -196,6 +211,7 @@ const DockIQ: React.FC = () => {
           </Box>
         </Paper>
 
+        {/* Restarting Status Card */}
         <Paper
           sx={{
             p: 3,
@@ -227,49 +243,7 @@ const DockIQ: React.FC = () => {
         </Paper>
       </Box>
 
-      {/* Navigation Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          TabIndicatorProps={{
-            style: {
-              display: 'none',
-            },
-          }}
-          textColor='inherit'
-        >
-          <Tab
-            label='Stats'
-            sx={{
-              textTransform: 'none',
-              '&.Mui-selected': {
-                color: 'text.primary',
-              },
-            }}
-          />
-          <Tab
-            label='Logs'
-            sx={{
-              textTransform: 'none',
-              '&.Mui-selected': {
-                color: 'text.primary',
-              },
-            }}
-          />
-          <Tab
-            label='Alerts'
-            sx={{
-              textTransform: 'none',
-              '&.Mui-selected': {
-                color: 'text.primary',
-              },
-            }}
-          />
-        </Tabs>
-      </Box>
-
-      {/* Refresh Button */}
+      {/* Table and Refresh Button */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
         <Button
           startIcon={<RefreshIcon />}
