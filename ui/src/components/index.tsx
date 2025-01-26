@@ -42,7 +42,11 @@ const DockIQ: React.FC = () => {
   // Fetch data from the backend
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:3003/api/container-stats');
+      const apiUrl = `${import.meta.env.VITE_API_URL}/container-stats`; // Dynamic backend API URL
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data: ${response.statusText}`);
+      }
       const data = await response.json();
 
       // Parse the backend response
@@ -85,8 +89,8 @@ const DockIQ: React.FC = () => {
     >
       {/* Header */}
       <Typography
-        variant='h4'
-        component='h1'
+        variant="h4"
+        component="h1"
         sx={{
           color: 'primary.main',
           fontWeight: 600,
@@ -106,125 +110,67 @@ const DockIQ: React.FC = () => {
           justifyContent: 'space-between',
         }}
       >
-        <Paper
-          sx={{
-            p: 3,
-            height: 120,
-            bgcolor: 'rgba(25, 118, 210, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            flex: 1,
-          }}
-        >
-          <Box
+        {['running', 'stopped', 'unhealthy', 'restarting'].map((status, index) => (
+          <Paper
+            key={index}
             sx={{
-              bgcolor: 'primary.main',
-              p: 1,
-              borderRadius: 1,
-              opacity: 0.8,
+              p: 3,
+              height: 120,
+              bgcolor: `rgba(${
+                status === 'running'
+                  ? '25, 118, 210'
+                  : status === 'stopped'
+                  ? '158, 158, 158'
+                  : status === 'unhealthy'
+                  ? '211, 47, 47'
+                  : '255, 167, 38'
+              }, 0.08)`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              flex: 1,
             }}
           >
-            <Box component='span' sx={{ typography: 'h5' }}>
-              {statusCounts.running}
+            <Box
+              sx={{
+                bgcolor: `${
+                  status === 'running'
+                    ? 'primary.main'
+                    : status === 'stopped'
+                    ? 'grey.500'
+                    : status === 'unhealthy'
+                    ? 'error.main'
+                    : 'warning.main'
+                }`,
+                p: 1,
+                borderRadius: 1,
+                opacity: 0.8,
+              }}
+            >
+              <Box component="span" sx={{ typography: 'h5' }}>
+                {statusCounts[status as keyof typeof statusCounts]}
+              </Box>
             </Box>
-          </Box>
-          <Box>
-            <Typography variant='h6' sx={{ color: 'primary.main' }}>
-              Running
-            </Typography>
-          </Box>
-        </Paper>
-
-        <Paper
-          sx={{
-            p: 3,
-            height: 120,
-            bgcolor: 'rgba(158, 158, 158, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            flex: 1,
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: 'grey.500',
-              p: 1,
-              borderRadius: 1,
-              opacity: 0.8,
-            }}
-          >
-            <Box component='span' sx={{ typography: 'h5' }}>
-              {statusCounts.stopped}
+            <Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: `${
+                    status === 'running'
+                      ? 'primary.main'
+                      : status === 'stopped'
+                      ? 'grey.500'
+                      : status === 'unhealthy'
+                      ? 'error.main'
+                      : 'warning.main'
+                  }`,
+                }}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </Typography>
             </Box>
-          </Box>
-          <Box>
-            <Typography variant='h6' sx={{ color: 'grey.500' }}>
-              Stopped
-            </Typography>
-          </Box>
-        </Paper>
-
-        <Paper
-          sx={{
-            p: 3,
-            height: 120,
-            bgcolor: 'rgba(211, 47, 47, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            flex: 1,
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: 'error.main',
-              p: 1,
-              borderRadius: 1,
-              opacity: 0.8,
-            }}
-          >
-            <Box component='span' sx={{ typography: 'h5' }}>
-              {statusCounts.unhealthy}
-            </Box>
-          </Box>
-          <Box>
-            <Typography variant='h6' sx={{ color: 'error.main' }}>
-              Unhealthy
-            </Typography>
-          </Box>
-        </Paper>
-
-        <Paper
-          sx={{
-            p: 3,
-            height: 120,
-            bgcolor: 'rgba(255, 167, 38, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            flex: 1,
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: 'warning.main',
-              p: 1,
-              borderRadius: 1,
-              opacity: 0.8,
-            }}
-          >
-            <Box component='span' sx={{ typography: 'h5' }}>
-              {statusCounts.restarting}
-            </Box>
-          </Box>
-          <Box>
-            <Typography variant='h6' sx={{ color: 'warning.main' }}>
-              Restarting
-            </Typography>
-          </Box>
-        </Paper>
+          </Paper>
+        ))}
       </Box>
 
       {/* Navigation Tabs */}
@@ -237,10 +183,10 @@ const DockIQ: React.FC = () => {
               display: 'none',
             },
           }}
-          textColor='inherit'
+          textColor="inherit"
         >
           <Tab
-            label='Stats'
+            label="Stats"
             sx={{
               textTransform: 'none',
               '&.Mui-selected': {
@@ -249,7 +195,7 @@ const DockIQ: React.FC = () => {
             }}
           />
           <Tab
-            label='Logs'
+            label="Logs"
             sx={{
               textTransform: 'none',
               '&.Mui-selected': {
@@ -258,7 +204,7 @@ const DockIQ: React.FC = () => {
             }}
           />
           <Tab
-            label='Alerts'
+            label="Alerts"
             sx={{
               textTransform: 'none',
               '&.Mui-selected': {
@@ -320,22 +266,22 @@ const DockIQ: React.FC = () => {
                 <TableCell>
                   <Chip
                     label={container.status}
-                    size='small'
+                    size="small"
                     sx={{
                       bgcolor:
-                        container.status === 'Running'
+                        container.status === 'running'
                           ? 'rgba(46, 125, 50, 0.2)'
-                          : container.status === 'Unhealthy'
+                          : container.status === 'unhealthy'
                           ? 'rgba(211, 47, 47, 0.2)'
-                          : container.status === 'Restarting'
+                          : container.status === 'restarting'
                           ? 'rgba(255, 167, 38, 0.2)'
                           : 'rgba(158, 158, 158, 0.2)',
                       color:
-                        container.status === 'Running'
+                        container.status === 'running'
                           ? '#66bb6a'
-                          : container.status === 'Unhealthy'
+                          : container.status === 'unhealthy'
                           ? '#f44336'
-                          : container.status === 'Restarting'
+                          : container.status === 'restarting'
                           ? '#ffa726'
                           : '#9e9e9e',
                       fontWeight: 500,
@@ -348,7 +294,7 @@ const DockIQ: React.FC = () => {
                 <TableCell>{container.blockIO}</TableCell>
                 <TableCell>{container.pids}</TableCell>
                 <TableCell>
-                  <IconButton size='small' sx={{ color: 'text.secondary' }}>
+                  <IconButton size="small" sx={{ color: 'text.secondary' }}>
                     <KeyboardArrowDownIcon />
                   </IconButton>
                 </TableCell>
